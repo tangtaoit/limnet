@@ -58,3 +58,11 @@ type EventHandler interface {
 }
 
 ```
+
+## 性能测试
+
+运行 benchmarks/bench.sh
+
+#### Echo Server 在mac上测试结果
+
+![](benchmarks/results/echo.png)
