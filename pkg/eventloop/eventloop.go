@@ -3,9 +3,9 @@ package eventloop
 import (
 	"sync"
 
-	"github.com/Allenxuxu/toolkit/sync/spinlock"
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"github.com/tangtaoit/limnet/pkg/limpoller"
+	"github.com/tangtaoit/limnet/pkg/limutil"
 	"github.com/tangtaoit/limnet/pkg/limutil/sync/atomic"
 	"go.uber.org/zap"
 )
@@ -29,10 +29,10 @@ type EventHandler interface {
 type EventLoop struct {
 	poller        *limpoller.Poller
 	asyncJobQueue AsyncJobQueue
-	handlers      sync.Map          // 处理者集合
-	packet        []byte            // 包缓存
-	jobLock       spinlock.SpinLock // job自旋锁
-	eventHandling atomic.Bool       // 事件是否处理中
+	handlers      sync.Map         // 处理者集合
+	packet        []byte           // 包缓存
+	jobLock       limutil.SpinLock // job自旋锁
+	eventHandling atomic.Bool      // 事件是否处理中
 	limlog.Log
 }
 
