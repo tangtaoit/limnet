@@ -10,7 +10,7 @@ type Options struct {
 	TimingWheelTick  time.Duration // 时间轮轮训间隔 必须大于等于1ms
 	TimingWheelSize  int64         // 时间轮大小
 	ConnIdleTime     time.Duration // 连接闲置时间，如果大于此闲置时间将自动关闭连接
-	proto            Protocol      // 协议
+	unPacket         UnPacket      // 协议
 }
 
 // Option 参数项
@@ -25,7 +25,7 @@ func NewOption() *Options {
 		TimingWheelTick:  time.Millisecond * 1,
 		TimingWheelSize:  1000,
 		ConnIdleTime:     60 * time.Second,
-		proto:            &DefaultProtocol{},
+		unPacket:         &DefaultUnPacket{},
 	}
 }
 
@@ -45,10 +45,10 @@ func WithAddr(addr string) Option {
 	}
 }
 
-// WithProto 设置协议
-func WithProto(proto Protocol) Option {
+// WithUnPacket 设置解包协议
+func WithUnPacket(unPacket UnPacket) Option {
 	return func(opts *Options) error {
-		opts.proto = proto
+		opts.unPacket = unPacket
 		return nil
 	}
 }

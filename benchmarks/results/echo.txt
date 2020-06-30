@@ -2,23 +2,18 @@
 --- BENCH ECHO START ---
 
 --- GO-NET ---
-go: finding gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7
-go: finding github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237
-go: finding gonum.org/v1/gonum v0.7.0
-go: finding modernc.org/strutil v1.1.0
-go: finding gonum.org/v1/plot v0.0.0-20190515093506-e2840ee46a6b
-2020/06/30 18:05:55 echo server started on port 5000
+2020/06/30 18:22:44 echo server started on port 5000
 *** 100 connections, 15 seconds, 6 byte packets
 Destination: [127.0.0.1]:5000
 Interface lo0 address [127.0.0.1]:0
 Using interface lo0 to connect to [127.0.0.1]:5000
 Ramped up to 100 connections.
-Total data sent:     4808.2 MiB (5041811960 bytes)
-Total data received: 4807.3 MiB (5040769195 bytes)
-Bandwidth per channel: 53.752⇅ Mbps (6719.0 kBps)
-Aggregate bandwidth: 2687.322↓, 2687.878↑ Mbps
-Packet rate estimate: 269613.2↓, 257710.4↑ (5↓, 6↑ TCP MSS/op)
-Test duration: 15.0061 s.
+Total data sent:     5207.0 MiB (5459964976 bytes)
+Total data received: 5206.4 MiB (5459285211 bytes)
+Bandwidth per channel: 58.195⇅ Mbps (7274.4 kBps)
+Aggregate bandwidth: 2909.569↓, 2909.931↑ Mbps
+Packet rate estimate: 285349.9↓, 275782.1↑ (5↓, 6↑ TCP MSS/op)
+Test duration: 15.0106 s.
 --- DONE ---
 
 --- LIMNET ---
@@ -27,12 +22,12 @@ Destination: [127.0.0.1]:5004
 Interface lo0 address [127.0.0.1]:0
 Using interface lo0 to connect to [127.0.0.1]:5004
 Ramped up to 100 connections.
-Total data sent:     17616.5 MiB (18472285200 bytes)
-Total data received: 17623.7 MiB (18479781289 bytes)
-Bandwidth per channel: 197.015⇅ Mbps (24626.9 kBps)
-Aggregate bandwidth: 9852.765↓, 9848.768↑ Mbps
-Packet rate estimate: 910860.8↓, 854218.0↑ (11↓, 23↑ TCP MSS/op)
-Test duration: 15.0047 s.
+Total data sent:     17715.3 MiB (18575855428 bytes)
+Total data received: 17719.6 MiB (18580331455 bytes)
+Bandwidth per channel: 198.144⇅ Mbps (24768.0 kBps)
+Aggregate bandwidth: 9908.393↓, 9906.006↑ Mbps
+Packet rate estimate: 914156.1↓, 869206.0↑ (11↓, 24↑ TCP MSS/op)
+Test duration: 15.0017 s.
 --- DONE ---
 
 --- BENCH ECHO DONE ---

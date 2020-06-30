@@ -29,20 +29,24 @@ func (d *DefaultEventHandler) OnClose(c *Conn) {
 
 }
 
-// Protocol 协议
-type Protocol interface {
+// UnPacket 解包协议
+type UnPacket interface {
 	// 解包
 	UnPacket(c *Conn) ([]byte, error)
-	// 封包
-	Packet(c *Conn, data []byte) []byte
 }
 
-// DefaultProtocol 默认协议
-type DefaultProtocol struct {
+// Packet 封包协议
+type Packet interface {
+	// 封包
+	Packet(c *Conn) []byte
+}
+
+// DefaultUnPacket 默认解包协议
+type DefaultUnPacket struct {
 }
 
 // UnPacket UnPacket
-func (d *DefaultProtocol) UnPacket(c *Conn) ([]byte, error) {
+func (d *DefaultUnPacket) UnPacket(c *Conn) ([]byte, error) {
 	buf := c.Read()
 	if len(buf) == 0 {
 		return nil, nil
@@ -51,7 +55,11 @@ func (d *DefaultProtocol) UnPacket(c *Conn) ([]byte, error) {
 	return buf, nil
 }
 
+// DefaultPacket 默认封包协议
+type DefaultPacket struct {
+}
+
 // Packet Packet
-func (d *DefaultProtocol) Packet(c *Conn, data []byte) []byte {
+func (d *DefaultPacket) Packet(c *Conn, data []byte) []byte {
 	return data
 }

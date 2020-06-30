@@ -119,7 +119,7 @@ func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 	loop := l.nextLoop()             // 获取conn的eventloop
 	conn := NewConn(connfd, loop, l) // 创建一个新的连接
 
-	l.eventHandler.OnConnect(conn) // 连接事件
+	l.eventHandler.OnConnect(conn) // 触发连接事件
 
 	// 绑定连接fd对应的处理者
 	if err := loop.BindHandler(connfd, conn); err != nil {

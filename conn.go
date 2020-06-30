@@ -109,7 +109,7 @@ func (c *Conn) handleRead() error {
 }
 
 func (c *Conn) read() ([]byte, error) {
-	return c.lnet.opts.proto.UnPacket(c)
+	return c.lnet.opts.unPacket.UnPacket(c)
 }
 
 func (c *Conn) handleWrite() error {
@@ -272,7 +272,7 @@ func (c *Conn) ShiftN(n int) (size int) {
 	return
 }
 
-// Write Write
+// Write 直写
 func (c *Conn) Write(buf []byte) (err error) {
 	if !c.connected.Get() {
 		return ErrConnectionClosed
@@ -281,6 +281,15 @@ func (c *Conn) Write(buf []byte) (err error) {
 		c.write(buf)
 		return nil
 	})
+}
+
+// WritePacket 写包
+func (c *Conn) WritePacket(packet Packet) (err error) {
+	data := packet.Packet(c)
+	if len(data) > 0 {
+		return c.Write(data)
+	}
+	return nil
 }
 
 // Connected 是否已连接
