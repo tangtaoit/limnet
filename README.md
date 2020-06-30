@@ -37,7 +37,7 @@ func main() {
 	var port int
 	flag.IntVar(&port, "port", 9000, "--port 9000")
 	flag.Parse()
-    handler := &echoServer{}
+        handler := &echoServer{}
 	lm := limnet.New(handler, limnet.WithAddr(fmt.Sprintf("127.0.0.1:%d", port)))
 	lm.Run()
 }
