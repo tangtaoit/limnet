@@ -20,6 +20,6 @@ func main() {
 	flag.IntVar(&port, "port", 9000, "--port 9000")
 	flag.Parse()
 
-	lm := limnet.New(&echoServer{}, limnet.WithAddr(fmt.Sprintf("127.0.0.1:%d", port)))
+	lm := limnet.New(&echoServer{}, limnet.WithAddr(fmt.Sprintf("tcp://127.0.0.1:%d", port)))
 	lm.Run()
 }

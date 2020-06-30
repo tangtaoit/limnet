@@ -2,6 +2,7 @@ package limnet
 
 import (
 	"runtime"
+	"strings"
 
 	"github.com/RussellLuo/timingwheel"
 	"github.com/tangtaoit/limnet/pkg/eventloop"
@@ -48,7 +49,8 @@ func New(eventHandler EventHandler, optFuncs ...Option) *LIMNet {
 	// 初始化连接的eventLoop
 	l.initConnectEventLoop()
 
-	l.tcp = NewTCPServer(l)
+	_, addr := parseAddr(opts.Addr)
+	l.tcp = NewTCPServer(addr, l)
 
 	return l
 }
@@ -125,4 +127,17 @@ func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 	if err := loop.BindHandler(connfd, conn); err != nil {
 		l.Error("连接添加失败！", zap.Error(err))
 	}
+}
+
+// ---------- other ----------
+
+func parseAddr(addr string) (network, address string) {
+	network = "tcp"
+	address = strings.ToLower(addr)
+	if strings.Contains(address, "://") {
+		pair := strings.Split(address, "://")
+		network = pair[0]
+		address = pair[1]
+	}
+	return
 }

@@ -2,18 +2,18 @@
 --- BENCH ECHO START ---
 
 --- GO-NET ---
-2020/06/30 18:22:44 echo server started on port 5000
+2020/06/30 19:09:45 echo server started on port 5000
 *** 100 connections, 15 seconds, 6 byte packets
 Destination: [127.0.0.1]:5000
 Interface lo0 address [127.0.0.1]:0
 Using interface lo0 to connect to [127.0.0.1]:5000
 Ramped up to 100 connections.
-Total data sent:     5207.0 MiB (5459964976 bytes)
-Total data received: 5206.4 MiB (5459285211 bytes)
-Bandwidth per channel: 58.195⇅ Mbps (7274.4 kBps)
-Aggregate bandwidth: 2909.569↓, 2909.931↑ Mbps
-Packet rate estimate: 285349.9↓, 275782.1↑ (5↓, 6↑ TCP MSS/op)
-Test duration: 15.0106 s.
+Total data sent:     5710.7 MiB (5988134136 bytes)
+Total data received: 5710.1 MiB (5987442090 bytes)
+Bandwidth per channel: 63.835⇅ Mbps (7979.4 kBps)
+Aggregate bandwidth: 3191.574↓, 3191.943↑ Mbps
+Packet rate estimate: 324911.4↓, 288101.2↑ (5↓, 6↑ TCP MSS/op)
+Test duration: 15.0081 s.
 --- DONE ---
 
 --- LIMNET ---
@@ -22,12 +22,12 @@ Destination: [127.0.0.1]:5004
 Interface lo0 address [127.0.0.1]:0
 Using interface lo0 to connect to [127.0.0.1]:5004
 Ramped up to 100 connections.
-Total data sent:     17715.3 MiB (18575855428 bytes)
-Total data received: 17719.6 MiB (18580331455 bytes)
-Bandwidth per channel: 198.144⇅ Mbps (24768.0 kBps)
-Aggregate bandwidth: 9908.393↓, 9906.006↑ Mbps
-Packet rate estimate: 914156.1↓, 869206.0↑ (11↓, 24↑ TCP MSS/op)
-Test duration: 15.0017 s.
+Total data sent:     17524.1 MiB (18375367056 bytes)
+Total data received: 17528.1 MiB (18379528671 bytes)
+Bandwidth per channel: 195.959⇅ Mbps (24494.8 kBps)
+Aggregate bandwidth: 9799.037↓, 9796.819↑ Mbps
+Packet rate estimate: 902429.6↓, 841101.5↑ (11↓, 22↑ TCP MSS/op)
+Test duration: 15.0052 s.
 --- DONE ---
 
 --- BENCH ECHO DONE ---

@@ -11,15 +11,16 @@ import (
 type TCPServer struct {
 	ln net.Listener
 	limlog.Log
-
+	addr string
 	lnet *LIMNet
 }
 
 // NewTCPServer 创建一个tcp服务
-func NewTCPServer(lnet *LIMNet) *TCPServer {
+func NewTCPServer(addr string, lnet *LIMNet) *TCPServer {
 	s := &TCPServer{
 		Log:  limlog.NewLIMLog("TCPServer"),
 		lnet: lnet,
+		addr: addr,
 	}
 
 	// 初始化listen和添加到listenerLoop
@@ -31,7 +32,7 @@ func NewTCPServer(lnet *LIMNet) *TCPServer {
 func (s *TCPServer) initAndAddToLoopListen() {
 	// 开启tcp监听
 	var err error
-	s.ln, err = net.Listen("tcp", s.lnet.opts.Addr)
+	s.ln, err = net.Listen("tcp", s.addr)
 	if err != nil {
 		panic(err)
 	}
