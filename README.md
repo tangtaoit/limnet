@@ -65,4 +65,6 @@ type EventHandler interface {
 
 #### Echo Server 在mac上测试结果
 
+go-net为原生的网络库，limnet为本库
+
 ![](benchmarks/results/echo.png)
