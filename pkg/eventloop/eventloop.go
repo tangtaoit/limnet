@@ -28,9 +28,9 @@ type EventHandler interface {
 // EventLoop 事件循环
 type EventLoop struct {
 	poller        *limpoller.Poller
+	asyncJobQueue AsyncJobQueue
 	handlers      sync.Map          // 处理者集合
-	PacketBuf     []byte            // 包缓存
-	writeJobs     []func()          // 写jobs集合
+	packet        []byte            // 包缓存
 	jobLock       spinlock.SpinLock // job自旋锁
 	eventHandling atomic.Bool       // 事件是否处理中
 	limlog.Log
@@ -44,10 +44,21 @@ func New() (*EventLoop, error) {
 	}
 
 	return &EventLoop{
-		poller:    p,
-		Log:       limlog.NewLIMLog("EventLoop"),
-		PacketBuf: make([]byte, 0xFFFF),
+		poller:        p,
+		asyncJobQueue: NewAsyncJobQueue(),
+		Log:           limlog.NewLIMLog("EventLoop"),
+		packet:        make([]byte, 0xFFFF),
 	}, nil
+}
+
+// PacketBuf 内部使用，临时缓冲区
+func (l *EventLoop) PacketBuf() []byte {
+	return l.packet
+}
+
+// Poller 获取Poller对象
+func (l *EventLoop) Poller() *limpoller.Poller {
+	return l.poller
 }
 
 // Run 运行事件循环
@@ -67,56 +78,31 @@ func (l *EventLoop) BindHandler(fd int, h EventHandler) error {
 	return nil
 }
 
-// Register 注册事件
-func (l *EventLoop) Register(fd int, event Event) error {
-	if event&ReadEvent != 0 {
-		return l.poller.EnableRead(fd)
+// DeleteFdInLoop 删除 fd
+func (l *EventLoop) DeleteFdInLoop(fd int) {
+	if err := l.poller.Del(fd); err != nil {
+		limlog.Error("[DeleteFdInLoop]", zap.Error(err))
 	}
-	if event == ReadEvent|WriteEvent {
-		return l.poller.EnableReadWrite(fd)
-	}
-	if event&WriteEvent != 0 {
-		return l.poller.EnableWrite(fd)
+	l.handlers.Delete(fd)
+}
+
+// Trigger 将job推入队列，然后唤醒eventloop去执行job 从而达到串行的目的，避免了race
+func (l *EventLoop) Trigger(job Job) error {
+	if l.asyncJobQueue.Push(job) == 1 && !l.eventHandling.Get() {
+		return l.poller.Wake()
 	}
 	return nil
 }
 
-// WriteJob WriteJob
-func (l *EventLoop) WriteJob(f func()) {
-	l.jobLock.Lock()
-	l.writeJobs = append(l.writeJobs, f)
-	l.jobLock.Unlock()
-
-	if !l.eventHandling.Get() {
-		if err := l.poller.Wake(); err != nil {
-			l.Error("Job Wake error, ", zap.Error(err))
-		}
-	}
-}
-
 func (l *EventLoop) handleEvent(fd int, events limpoller.Event) {
-	println("fd:%d  event: %d", fd, events)
-
 	l.eventHandling.Set(true)
-	if fd != -1 {
+	if fd != -1 { // -1表示唤醒操作
 		s, ok := l.handlers.Load(fd)
 		if ok {
 			s.(EventHandler).Handle(fd, events)
 		}
 	}
 	l.eventHandling.Set(false)
-	// 执行写任务
-	l.doWriteJobs()
-}
-
-func (l *EventLoop) doWriteJobs() {
-	l.jobLock.Lock()
-	jobs := l.writeJobs
-	l.writeJobs = nil
-	l.jobLock.Unlock()
-
-	length := len(jobs)
-	for i := 0; i < length; i++ {
-		jobs[i]()
-	}
+	// 执行任务
+	l.asyncJobQueue.ExecuteJobs()
 }

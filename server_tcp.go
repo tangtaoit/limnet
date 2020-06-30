@@ -3,7 +3,6 @@ package limnet
 import (
 	"net"
 
-	"github.com/tangtaoit/limnet/pkg/eventloop"
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"golang.org/x/sys/unix"
 )
@@ -12,21 +11,17 @@ import (
 type TCPServer struct {
 	ln net.Listener
 	limlog.Log
-	listenerLoop *eventloop.EventLoop // listener的 eventLoop
-	lnet         *LIMNet
+
+	lnet *LIMNet
 }
 
 // NewTCPServer 创建一个tcp服务
-func NewTCPServer(lnet *LIMNet, opts *Options) *TCPServer {
+func NewTCPServer(lnet *LIMNet) *TCPServer {
 	s := &TCPServer{
 		Log:  limlog.NewLIMLog("TCPServer"),
 		lnet: lnet,
 	}
-	var err error
-	s.listenerLoop, err = eventloop.New()
-	if err != nil {
-		panic(err)
-	}
+
 	// 初始化listen和添加到listenerLoop
 	s.initAndAddToLoopListen()
 
@@ -49,7 +44,7 @@ func (s *TCPServer) initAndAddToLoopListen() {
 		panic(err)
 	}
 	// 将tcp监听器放入loop 收到Conn将会调用 s.lnet.Handle
-	err = s.listenerLoop.BindHandler(fd, s.lnet)
+	err = s.lnet.listenerLoop.BindHandler(fd, s.lnet)
 	if err != nil {
 		panic(err)
 	}

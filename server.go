@@ -3,6 +3,8 @@ package limnet
 import (
 	"runtime"
 
+	"github.com/Allenxuxu/toolkit/sync"
+	"github.com/RussellLuo/timingwheel"
 	"github.com/tangtaoit/limnet/pkg/eventloop"
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"github.com/tangtaoit/limnet/pkg/limpoller"
@@ -12,14 +14,18 @@ import (
 
 // LIMNet limnet erver
 type LIMNet struct {
+	listenerLoop *eventloop.EventLoop   // listener的 eventLoop
 	connectLoops []*eventloop.EventLoop // 连接的eventloop
 	opts         *Options
 	limlog.Log
 	nextLoopIndex int
+	tcp           *TCPServer
+	eventHandler  EventHandler
+	timingWheel   *timingwheel.TimingWheel
 }
 
 // New 创建server
-func New(optFuncs ...Option) *LIMNet {
+func New(eventHandler EventHandler, optFuncs ...Option) *LIMNet {
 	opts := NewOption()
 	for _, opt := range optFuncs {
 		if opt != nil {
@@ -29,11 +35,20 @@ func New(optFuncs ...Option) *LIMNet {
 		}
 	}
 	l := &LIMNet{
-		opts: opts,
-		Log:  limlog.NewLIMLog("LIMNet"),
+		opts:         opts,
+		eventHandler: eventHandler,
+		timingWheel:  timingwheel.NewTimingWheel(opts.TimingWheelTick, opts.TimingWheelSize),
+		Log:          limlog.NewLIMLog("LIMNet"),
+	}
+	var err error
+	l.listenerLoop, err = eventloop.New()
+	if err != nil {
+		panic(err)
 	}
 	// 初始化连接的eventLoop
 	l.initConnectEventLoop()
+
+	l.tcp = NewTCPServer(l)
 
 	return l
 }
@@ -75,6 +90,18 @@ func (l *LIMNet) Handle(fd int, event limpoller.Event) {
 	}
 }
 
+// Run 运行
+func (l *LIMNet) Run() {
+	sw := sync.WaitGroupWrapper{}
+	l.timingWheel.Start()
+	length := len(l.connectLoops)
+	for i := 0; i < length; i++ {
+		sw.AddAndRun(l.connectLoops[i].Run)
+	}
+	sw.AddAndRun(l.listenerLoop.Run)
+	sw.Wait()
+}
+
 // Close 关闭
 func (l *LIMNet) Close() error {
 	return nil
@@ -89,8 +116,10 @@ func (l *LIMNet) nextLoop() *eventloop.EventLoop {
 }
 
 func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
-	loop := l.nextLoop() // 获取conn的eventloop
-	conn := NewConn(connfd, loop, l)
+	loop := l.nextLoop()             // 获取conn的eventloop
+	conn := NewConn(connfd, loop, l) // 创建一个新的连接
+
+	l.eventHandler.OnConnect(conn) // 连接事件
 
 	// 绑定连接fd对应的处理者
 	if err := loop.BindHandler(connfd, conn); err != nil {
