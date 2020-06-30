@@ -4,7 +4,7 @@ limnet 轻量，快速，高效的网络框架。
 
 ```
 s := limnet.New(handler,address,opts...) // 创建limnet服务
-s.Run()  开始
+s.Run()  // 开始
 ```
 
 ## 安装

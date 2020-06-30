@@ -3,11 +3,11 @@ package limnet
 import (
 	"runtime"
 
-	"github.com/Allenxuxu/toolkit/sync"
 	"github.com/RussellLuo/timingwheel"
 	"github.com/tangtaoit/limnet/pkg/eventloop"
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"github.com/tangtaoit/limnet/pkg/limpoller"
+	"github.com/tangtaoit/limnet/pkg/limutil/sync"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 )
