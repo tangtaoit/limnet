@@ -164,6 +164,10 @@ func (c *Conn) handleClose(fd int) error {
 }
 
 func (c *Conn) write(buf []byte) {
+	if !c.connected.Get() {
+		c.Debug("连接已关闭，不能write", zap.Any("conn", c))
+		return
+	}
 	if !c.outboundBuffer.IsEmpty() { // 如果输出buffer不为空，则写入到输出buffer里等下次event的时候真正写出去
 		_, _ = c.outboundBuffer.Write(buf)
 		return
