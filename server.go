@@ -81,6 +81,7 @@ func (l *LIMNet) Handle(fd int, event limpoller.Event) {
 		if err != nil {
 			if err != unix.EAGAIN {
 				l.Error("accept:", zap.Error(err))
+				panic(err)
 			}
 			return
 		}
