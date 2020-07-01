@@ -3,10 +3,19 @@
 package limpoller
 
 import (
+	"unsafe"
+
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"github.com/tangtaoit/limnet/pkg/limutil/sync/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
+)
+
+// Make the endianness of bytes compatible with more linux OSs under different processor-architectures,
+// according to http://man7.org/linux/man-pages/man2/eventfd.2.html.
+var (
+	u uint64 = 1
+	b        = (*(*[8]byte)(unsafe.Pointer(&u)))[:]
 )
 
 const readEvent = unix.EPOLLIN | unix.EPOLLPRI
@@ -15,53 +24,54 @@ const writeEvent = unix.EPOLLOUT
 // Poller Epoll封装
 type Poller struct {
 	fd       int
-	eventFd  int
+	wfd      int    // wake fd
+	wfdBuf   []byte // wfd buffer to read packet
 	running  atomic.Bool
 	waitDone chan struct{}
 }
 
 // Create 创建Poller
 func Create() (*Poller, error) {
-	fd, err := unix.EpollCreate1(0)
+	fd, err := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
 	if err != nil {
 		return nil, err
 	}
 
-	r0, _, errno := unix.Syscall(unix.SYS_EVENTFD2, 0, 0, 0)
-	if errno != 0 {
-		return nil, errno
+	var wfd int // wake fd
+	if wfd, err = unix.Eventfd(0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC); err != nil {
+		panic(err)
 	}
-	eventFd := int(r0)
 
-	err = unix.EpollCtl(fd, unix.EPOLL_CTL_ADD, eventFd, &unix.EpollEvent{
-		Events: unix.EPOLLIN,
-		Fd:     int32(eventFd),
+	err = unix.EpollCtl(fd, unix.EPOLL_CTL_ADD, wfd, &unix.EpollEvent{
+		Events: unix.EPOLLPRI | unix.EPOLLIN,
+		Fd:     int32(wfd),
 	})
 	if err != nil {
 		_ = unix.Close(fd)
-		_ = unix.Close(eventFd)
+		_ = unix.Close(wfd)
 		return nil, err
 	}
 
 	return &Poller{
 		fd:       fd,
-		eventFd:  eventFd,
+		wfd:      wfd,
+		wfdBuf:   make([]byte, 8),
 		waitDone: make(chan struct{}),
 	}, nil
 }
 
-var wakeBytes = []byte{1, 0, 0, 0, 0, 0, 0, 0}
+// var wakeBytes = []byte{1, 0, 0, 0, 0, 0, 0, 0}
 
 // Wake 唤醒 epoll
 func (ep *Poller) Wake() error {
-	_, err := unix.Write(ep.eventFd, wakeBytes)
+	_, err := unix.Write(ep.wfd, b)
 	return err
 }
 
 var buf = make([]byte, 8)
 
 func (ep *Poller) wakeHandlerRead() {
-	n, err := unix.Read(ep.eventFd, buf)
+	n, err := unix.Read(ep.wfd, ep.wfdBuf)
 	if err != nil || n != 8 {
 		limlog.Error("wakeHandlerRead", zap.Error(err), zap.Int("n", n))
 	}
@@ -80,7 +90,7 @@ func (ep *Poller) Close() (err error) {
 
 	<-ep.waitDone
 	_ = unix.Close(ep.fd)
-	_ = unix.Close(ep.eventFd)
+	_ = unix.Close(ep.wfd)
 	return
 }
 
@@ -147,7 +157,7 @@ func (ep *Poller) Poll(handler func(fd int, event Event)) {
 
 		for i := 0; i < n; i++ {
 			fd := int(events[i].Fd)
-			if fd != ep.eventFd {
+			if fd != ep.wfd {
 				var rEvents Event
 				if ((events[i].Events & unix.POLLHUP) != 0) && ((events[i].Events & unix.POLLIN) == 0) {
 					rEvents |= EventErr

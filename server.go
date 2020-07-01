@@ -80,7 +80,7 @@ func (l *LIMNet) Handle(fd int, event limpoller.Event) {
 		connfd, sa, err := unix.Accept(fd) // 接受连接的fd
 		if err != nil {
 			if err != unix.EAGAIN {
-				l.Error("accept:", zap.Error(err))
+				l.Error("accept:", zap.Error(err), zap.Int("fd", fd))
 				panic(err)
 			}
 			return
