@@ -29,30 +29,19 @@ func (d *DefaultEventHandler) OnClose(c *Conn) {
 
 }
 
+// UnPacket 解包
+type UnPacket func(c *Conn) ([]byte, error)
+
 // UnPacket 解包协议
-type UnPacket interface {
-	// 解包
-	UnPacket(c *Conn) ([]byte, error)
-}
+// type UnPacket interface {
+// 	// 解包
+// 	UnPacket(c *Conn) ([]byte, error)
+// }
 
 // Packet 封包协议
 type Packet interface {
 	// 封包
 	Packet(c *Conn) []byte
-}
-
-// DefaultUnPacket 默认解包协议
-type DefaultUnPacket struct {
-}
-
-// UnPacket UnPacket
-func (d *DefaultUnPacket) UnPacket(c *Conn) ([]byte, error) {
-	buf := c.Read()
-	if len(buf) == 0 {
-		return nil, nil
-	}
-	c.ResetBuffer()
-	return buf, nil
 }
 
 // DefaultPacket 默认封包协议

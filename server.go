@@ -3,6 +3,7 @@ package limnet
 import (
 	"runtime"
 	"strings"
+	"sync/atomic"
 
 	"github.com/RussellLuo/timingwheel"
 	"github.com/tangtaoit/limnet/pkg/eventloop"
@@ -23,6 +24,7 @@ type LIMNet struct {
 	tcp           *TCPServer
 	eventHandler  EventHandler
 	timingWheel   *timingwheel.TimingWheel
+	idGen         int64
 }
 
 // New 创建server
@@ -106,7 +108,13 @@ func (l *LIMNet) Run() {
 
 // Close 关闭
 func (l *LIMNet) Close() error {
+	l.timingWheel.Stop()
 	return nil
+}
+
+// GetTCPServer 获取当前tcp服务
+func (l *LIMNet) GetTCPServer() *TCPServer {
+	return l.tcp
 }
 
 // ---------- 处理新的连接 ----------
@@ -118,8 +126,9 @@ func (l *LIMNet) nextLoop() *eventloop.EventLoop {
 }
 
 func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
-	loop := l.nextLoop()             // 获取conn的eventloop
-	conn := NewConn(connfd, loop, l) // 创建一个新的连接
+	loop := l.nextLoop() // 获取conn的eventloop
+	clientID := atomic.AddInt64(&l.idGen, 1)
+	conn := NewConn(clientID, connfd, loop, l) // 创建一个新的连接
 
 	l.eventHandler.OnConnect(conn) // 触发连接事件
 

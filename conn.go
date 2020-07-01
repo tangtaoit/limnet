@@ -20,11 +20,16 @@ var ErrConnectionClosed = errors.New("连接已关闭")
 
 // Conn Conn
 type Conn struct {
-	fd        int // 连接fd
+	id        int64  // 客户端唯一ID
+	uid       string // 客户端对应用户的uid
+	flag      int    // 客户端对应的标记 比如 0.APP 1.WEB 等等
+	level     int    // 客户端等级 比如 0.slave 1.master
+	fd        int    // 连接fd
 	loop      *eventloop.EventLoop
 	connected atomic.Bool
 	lnet      *LIMNet
 	ctx       interface{} // 用户自定义的内容
+	status    int         // 用户自定义的连接状态
 	buffer    []byte      // inbound的临时buffer
 	limlog.Log
 	inboundBuffer  *ringbuffer.RingBuffer // 来自客户端的数据
@@ -34,8 +39,9 @@ type Conn struct {
 }
 
 // NewConn 创建连接
-func NewConn(connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *Conn {
+func NewConn(id int64, connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *Conn {
 	conn := &Conn{
+		id:             id,
 		fd:             connfd,
 		loop:           loop,
 		lnet:           lnet,
@@ -109,7 +115,7 @@ func (c *Conn) handleRead() error {
 }
 
 func (c *Conn) read() ([]byte, error) {
-	return c.lnet.opts.unPacket.UnPacket(c)
+	return c.lnet.opts.unPacket(c)
 }
 
 func (c *Conn) handleWrite() error {
@@ -192,6 +198,11 @@ func (c *Conn) release() {
 }
 
 // ---------- 公用方法 ----------
+
+// GetID 获取客户端唯一ID
+func (c *Conn) GetID() int64 {
+	return c.id
+}
 
 // Read 读取数据
 func (c *Conn) Read() []byte {
@@ -317,3 +328,27 @@ func (c *Conn) Context() interface{} { return c.ctx }
 
 // SetContext 设置用户上下文内容
 func (c *Conn) SetContext(ctx interface{}) { c.ctx = ctx }
+
+// Status 自定义连接状态
+func (c *Conn) Status() int { return c.status }
+
+// SetStatus 设置状态
+func (c *Conn) SetStatus(status int) { c.status = status }
+
+// UID 用户uid
+func (c *Conn) UID() string { return c.uid }
+
+// SetUID 设置用户uid
+func (c *Conn) SetUID(uid string) { c.uid = uid }
+
+// Flag 客户端对应的标记 比如 0.APP 1.WEB 等等
+func (c *Conn) Flag() int { return c.flag }
+
+// SetFlag 设置客户端标示
+func (c *Conn) SetFlag(flag int) { c.flag = flag }
+
+// Level 客户端等级 比如 0.slave 1.master
+func (c *Conn) Level() int { return c.level }
+
+// SetLevel 设置客户端等级
+func (c *Conn) SetLevel(level int) { c.level = level }

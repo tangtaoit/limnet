@@ -1,6 +1,8 @@
 package limnet
 
-import "time"
+import (
+	"time"
+)
 
 // Options 配置
 type Options struct {
@@ -23,7 +25,15 @@ func NewOption() *Options {
 		TimingWheelTick:  time.Millisecond * 1,
 		TimingWheelSize:  1000,
 		ConnIdleTime:     60 * time.Second,
-		unPacket:         &DefaultUnPacket{},
+		unPacket: func(c *Conn) ([]byte, error) {
+			size, buf := c.ReadN(65535)
+			if len(buf) == 0 {
+				return nil, nil
+			}
+			// fmt.Println("len->", len(buf))
+			c.ShiftN(size)
+			return buf, nil
+		},
 	}
 }
 

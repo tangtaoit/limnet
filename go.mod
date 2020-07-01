@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/RussellLuo/timingwheel v0.0.0-20191015104426-744130d33fdc
 	github.com/onsi/gomega v1.10.1 // indirect
+	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/valyala/bytebufferpool v1.0.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3

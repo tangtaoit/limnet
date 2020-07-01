@@ -11,8 +11,9 @@ import (
 type TCPServer struct {
 	ln net.Listener
 	limlog.Log
-	addr string
-	lnet *LIMNet
+	addr     string
+	lnet     *LIMNet
+	realAddr string // 真实连接地址
 }
 
 // NewTCPServer 创建一个tcp服务
@@ -40,6 +41,7 @@ func (s *TCPServer) initAndAddToLoopListen() {
 	if err != nil {
 		panic(err)
 	}
+	s.realAddr = s.ln.(*net.TCPListener).Addr().String()
 	fd := int(f.Fd())
 	if err = unix.SetNonblock(fd, true); err != nil {
 		panic(err)
@@ -49,4 +51,9 @@ func (s *TCPServer) initAndAddToLoopListen() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// GetRealAddr 获取真实连接地址
+func (s *TCPServer) GetRealAddr() string {
+	return s.addr
 }
