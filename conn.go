@@ -108,7 +108,10 @@ func (c *Conn) handleRead() error {
 
 	// c.read()会触发c.lnet.proto.UnPacket UnPacket会触发当前的 Read
 	for packet, _ := c.read(); packet != nil; packet, _ = c.read() {
-		c.lnet.eventHandler.OnPacket(c, packet)
+		out := c.lnet.eventHandler.OnPacket(c, packet)
+		if len(out) > 0 {
+			c.write(out)
+		}
 	}
 	_, err = c.inboundBuffer.Write(c.buffer)
 	return err
@@ -164,6 +167,7 @@ func (c *Conn) handleClose(fd int) error {
 }
 
 func (c *Conn) write(buf []byte) {
+
 	if !c.connected.Get() {
 		c.Debug("连接已关闭，不能write", zap.Any("conn", c))
 		return
@@ -176,17 +180,36 @@ func (c *Conn) write(buf []byte) {
 	n, err := unix.Write(c.fd, buf)
 	if err != nil {
 		if err == unix.EAGAIN {
+			c.Warn("EAGAIN！", zap.Any("conn", c))
 			_, _ = c.outboundBuffer.Write(buf)
 			_ = c.loop.Poller().EnableReadWrite(c.fd)
 			return
 		}
-		_ = c.handleClose(c.fd)
+		c.Error("写入失败！", zap.Error(err), zap.Any("conn", c))
+		err = c.handleClose(c.fd)
+		if err != nil {
+			c.Error("关闭连接失败！", zap.Any("conn", c))
+		}
 		return
 	}
-	if n < len(buf) {
-		_, _ = c.outboundBuffer.Write(buf[n:])
-		_ = c.loop.Poller().EnableReadWrite(c.fd)
+	if n == 0 {
+		_, err = c.outboundBuffer.Write(buf)
+		if err != nil {
+			c.Error("写到客户端缓存区失败！", zap.Error(err), zap.Any("conn", c))
+		}
+	} else if n < len(buf) {
+		_, err = c.outboundBuffer.Write(buf[n:])
+		if err != nil {
+			c.Error("写到客户端缓存区失败！", zap.Error(err), zap.Any("conn", c))
+		}
 	}
+	if c.outboundBuffer.Length() > 0 {
+		err = c.loop.Poller().EnableReadWrite(c.fd)
+		if err != nil {
+			c.Error("EnableReadWrite is fail ！", zap.Error(err), zap.Any("conn", c))
+		}
+	}
+
 }
 
 // 释放连接
@@ -210,6 +233,9 @@ func (c *Conn) GetID() int64 {
 
 // Read 读取数据
 func (c *Conn) Read() []byte {
+	if !c.connected.Get() {
+		return nil
+	}
 	if c.inboundBuffer.IsEmpty() {
 		return c.buffer
 	}

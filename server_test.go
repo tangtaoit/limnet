@@ -7,7 +7,6 @@ type TestHandler struct {
 }
 
 func (t *TestHandler) OnConnect(c *Conn) {
-
 }
 
 func TestServerRun(t *testing.T) {

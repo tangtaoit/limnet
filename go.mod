@@ -3,6 +3,7 @@ module github.com/tangtaoit/limnet
 go 1.13
 
 require (
+	github.com/Allenxuxu/gev v0.1.9 // indirect
 	github.com/RussellLuo/timingwheel v0.0.0-20191015104426-744130d33fdc
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/panjf2000/ants/v2 v2.4.1

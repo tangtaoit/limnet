@@ -1,7 +1,9 @@
 package limnet
 
 import (
+	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -51,8 +53,7 @@ func New(eventHandler EventHandler, optFuncs ...Option) *LIMNet {
 	// 初始化连接的eventLoop
 	l.initConnectEventLoop()
 
-	_, addr := parseAddr(opts.Addr)
-	l.tcp = NewTCPServer(addr, l)
+	l.tcp = NewTCPServer(opts.Addr, l)
 
 	return l
 }
@@ -105,11 +106,20 @@ func (l *LIMNet) Run() {
 	}
 	sw.AddAndRun(l.listenerLoop.Run)
 	sw.Wait()
+	l.Error("狸猫IM退出！")
 }
 
 // Close 关闭
 func (l *LIMNet) Close() error {
 	l.timingWheel.Stop()
+	l.listenerLoop.Stop()
+	for k := range l.connectLoops {
+		if err := l.connectLoops[k].Stop(); err != nil {
+			l.Error("stop conn fail ", zap.Error(err))
+		}
+	}
+	l.tcp.Stop()
+	os.Exit(0)
 	return nil
 }
 
@@ -141,13 +151,17 @@ func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 
 // ---------- other ----------
 
-func parseAddr(addr string) (network, address string) {
+func parseAddr(addr string) (network, address string, port int) {
 	network = "tcp"
 	address = strings.ToLower(addr)
 	if strings.Contains(address, "://") {
 		pair := strings.Split(address, "://")
 		network = pair[0]
 		address = pair[1]
+		pair2 := strings.Split(address, ":")
+		portStr := pair2[1]
+		portInt64, _ := strconv.ParseInt(portStr, 10, 64)
+		port = int(portInt64)
 	}
 	return
 }

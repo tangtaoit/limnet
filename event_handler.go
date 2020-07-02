@@ -5,7 +5,7 @@ type EventHandler interface {
 	// 建立连接
 	OnConnect(c *Conn)
 	// 收到包 [data]为完整的数据包的数据
-	OnPacket(c *Conn, data []byte)
+	OnPacket(c *Conn, data []byte) (out []byte)
 	// 连接关闭
 	OnClose(c *Conn)
 }
@@ -20,8 +20,8 @@ func (d *DefaultEventHandler) OnConnect(c *Conn) {
 }
 
 // OnPacket 收到包
-func (d *DefaultEventHandler) OnPacket(c *Conn, data []byte) {
-
+func (d *DefaultEventHandler) OnPacket(c *Conn, data []byte) []byte {
+	return nil
 }
 
 // OnClose 连接关闭

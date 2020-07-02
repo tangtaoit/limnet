@@ -66,12 +66,29 @@ func (l *EventLoop) Run() {
 	l.poller.Poll(l.handleEvent)
 }
 
+// Stop 关闭事件循环
+func (l *EventLoop) Stop() error {
+	l.handlers.Range(func(key, value interface{}) bool {
+		s, ok := value.(EventHandler)
+		if !ok {
+			l.Error("value.(Socket) fail")
+		} else {
+			if err := s.Close(); err != nil {
+				l.Error("关闭eventloop失败！", zap.Error(err))
+			}
+		}
+		return true
+	})
+	return l.poller.Close()
+}
+
 // BindHandler 绑定连接对应的处理者
 func (l *EventLoop) BindHandler(fd int, h EventHandler) error {
 	var err error
 	l.handlers.Store(fd, h)
 	if err = l.poller.AddRead(fd); err != nil {
 		l.handlers.Delete(fd)
+		l.Error("绑定fd失败！", zap.Error(err))
 		return err
 	}
 
@@ -88,7 +105,8 @@ func (l *EventLoop) DeleteFdInLoop(fd int) {
 
 // Trigger 将job推入队列，然后唤醒eventloop去执行job 从而达到串行的目的，避免了race
 func (l *EventLoop) Trigger(job Job) error {
-	if l.asyncJobQueue.Push(job) == 1 && !l.eventHandling.Get() {
+	l.asyncJobQueue.Push(job)
+	if !l.eventHandling.Get() {
 		return l.poller.Wake()
 	}
 	return nil

@@ -11,8 +11,11 @@ type echoServer struct {
 	limnet.DefaultEventHandler
 }
 
-func (e *echoServer) OnPacket(c *limnet.Conn, data []byte) {
-	c.Write(data)
+func (e *echoServer) OnPacket(c *limnet.Conn, data []byte) (out []byte) {
+	out = data
+
+	// c.Write(data) TODO： 大量并发 异步write 会有错误
+	return
 }
 
 func main() {
@@ -20,6 +23,6 @@ func main() {
 	flag.IntVar(&port, "port", 9000, "--port 9000")
 	flag.Parse()
 
-	lm := limnet.New(&echoServer{}, limnet.WithAddr(fmt.Sprintf("tcp://127.0.0.1:%d", port)))
+	lm := limnet.New(&echoServer{}, limnet.WithAddr(fmt.Sprintf("tcp://:%d", port)))
 	lm.Run()
 }

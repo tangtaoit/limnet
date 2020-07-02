@@ -22,16 +22,16 @@ func NewOption() *Options {
 	return &Options{
 		Addr:             "tcp://127.0.0.1:6666",
 		ConnEventLoopNum: 0,
-		TimingWheelTick:  time.Millisecond * 1,
+		TimingWheelTick:  time.Millisecond * 10,
 		TimingWheelSize:  1000,
-		ConnIdleTime:     60 * time.Second,
+		ConnIdleTime:     600 * time.Second,
 		unPacket: func(c *Conn) ([]byte, error) {
-			size, buf := c.ReadN(65535)
+			buf := c.Read()
 			if len(buf) == 0 {
 				return nil, nil
 			}
 			// fmt.Println("len->", len(buf))
-			c.ShiftN(size)
+			c.ResetBuffer()
 			return buf, nil
 		},
 	}
