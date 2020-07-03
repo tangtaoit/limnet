@@ -26,3 +26,5 @@
 vendor/
 
 bin/
+
+benchmarks/results/

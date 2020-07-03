@@ -20,11 +20,8 @@ var ErrConnectionClosed = errors.New("连接已关闭")
 
 // Conn Conn
 type Conn struct {
-	id        int64  // 客户端唯一ID
-	uid       string // 客户端对应用户的uid
-	flag      int    // 客户端对应的标记 比如 0.APP 1.WEB 等等
-	level     int    // 客户端等级 比如 0.slave 1.master
-	fd        int    // 连接fd
+	id        int64 // 客户端唯一ID
+	fd        int   // 连接fd
 	loop      *eventloop.EventLoop
 	connected atomic.Bool
 	lnet      *LIMNet
@@ -36,6 +33,7 @@ type Conn struct {
 	outboundBuffer *ringbuffer.RingBuffer // 将要写到客户端的数据
 	byteBuffer     *bytebuffer.ByteBuffer // 临时读到的buffer
 	activeTime     atomic.Int64           // 连接最后一次活动时间，单位秒
+
 }
 
 // NewConn 创建连接
@@ -169,7 +167,6 @@ func (c *Conn) handleClose(fd int) error {
 func (c *Conn) write(buf []byte) {
 
 	if !c.connected.Get() {
-		c.Debug("连接已关闭，不能write", zap.Any("conn", c))
 		return
 	}
 	if !c.outboundBuffer.IsEmpty() { // 如果输出buffer不为空，则写入到输出buffer里等下次event的时候真正写出去
@@ -185,7 +182,6 @@ func (c *Conn) write(buf []byte) {
 			_ = c.loop.Poller().EnableReadWrite(c.fd)
 			return
 		}
-		c.Error("写入失败！", zap.Error(err), zap.Any("conn", c))
 		err = c.handleClose(c.fd)
 		if err != nil {
 			c.Error("关闭连接失败！", zap.Any("conn", c))
@@ -364,21 +360,3 @@ func (c *Conn) Status() int { return c.status }
 
 // SetStatus 设置状态
 func (c *Conn) SetStatus(status int) { c.status = status }
-
-// UID 用户uid
-func (c *Conn) UID() string { return c.uid }
-
-// SetUID 设置用户uid
-func (c *Conn) SetUID(uid string) { c.uid = uid }
-
-// Flag 客户端对应的标记 比如 0.APP 1.WEB 等等
-func (c *Conn) Flag() int { return c.flag }
-
-// SetFlag 设置客户端标示
-func (c *Conn) SetFlag(flag int) { c.flag = flag }
-
-// Level 客户端等级 比如 0.slave 1.master
-func (c *Conn) Level() int { return c.level }
-
-// SetLevel 设置客户端等级
-func (c *Conn) SetLevel(level int) { c.level = level }

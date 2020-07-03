@@ -24,7 +24,7 @@ func NewOption() *Options {
 		ConnEventLoopNum: 0,
 		TimingWheelTick:  time.Millisecond * 10,
 		TimingWheelSize:  1000,
-		ConnIdleTime:     600 * time.Second,
+		ConnIdleTime:     60 * time.Second,
 		unPacket: func(c *Conn) ([]byte, error) {
 			buf := c.Read()
 			if len(buf) == 0 {
