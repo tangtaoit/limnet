@@ -6,7 +6,7 @@ type TestHandler struct {
 	DefaultEventHandler
 }
 
-func (t *TestHandler) OnConnect(c *Conn) {
+func (t *TestHandler) OnConnect(c Conn) {
 }
 
 func TestServerRun(t *testing.T) {

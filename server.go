@@ -24,6 +24,7 @@ type LIMNet struct {
 	limlog.Log
 	nextLoopIndex int
 	tcp           *TCPServer
+	ws            *WSServer
 	eventHandler  EventHandler
 	timingWheel   *timingwheel.TimingWheel
 	idGen         int64
@@ -53,7 +54,8 @@ func New(eventHandler EventHandler, optFuncs ...Option) *LIMNet {
 	// 初始化连接的eventLoop
 	l.initConnectEventLoop()
 
-	l.tcp = NewTCPServer(opts.Addr, l)
+	l.tcp = NewTCPServer(l)
+	l.ws = NewWSServer(l)
 
 	return l
 }
@@ -100,6 +102,7 @@ func (l *LIMNet) Handle(fd int, event limpoller.Event) {
 func (l *LIMNet) Run() {
 	sw := sync.WaitGroupWrapper{}
 	l.timingWheel.Start()
+	l.ws.Start()
 	length := len(l.connectLoops)
 	for i := 0; i < length; i++ {
 		sw.AddAndRun(l.connectLoops[i].Run)
@@ -139,7 +142,7 @@ func (l *LIMNet) nextLoop() *eventloop.EventLoop {
 func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 	loop := l.nextLoop() // 获取conn的eventloop
 	clientID := atomic.AddInt64(&l.idGen, 1)
-	conn := NewConn(clientID, connfd, loop, l) // 创建一个新的连接
+	conn := NewTCPConn(clientID, connfd, loop, l) // 创建一个新的连接
 
 	l.eventHandler.OnConnect(conn) // 触发连接事件
 

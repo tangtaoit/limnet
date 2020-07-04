@@ -15,11 +15,11 @@ type TCPServer struct {
 }
 
 // NewTCPServer 创建一个tcp服务
-func NewTCPServer(addr string, lnet *LIMNet) *TCPServer {
+func NewTCPServer(lnet *LIMNet) *TCPServer {
 	s := &TCPServer{
 		Log:  limlog.NewLIMLog("TCPServer"),
 		lnet: lnet,
-		addr: addr,
+		addr: lnet.opts.Addr,
 	}
 
 	// 初始化listen和添加到listenerLoop

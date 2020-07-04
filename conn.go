@@ -18,8 +18,39 @@ import (
 // ErrConnectionClosed 连接已关闭
 var ErrConnectionClosed = errors.New("连接已关闭")
 
-// Conn Conn
-type Conn struct {
+// Conn 连接接口
+type Conn interface {
+	// 获取连接唯一ID
+	GetID() int64
+	// 读取数据
+	Read() []byte
+	// 重置buffer
+	ResetBuffer()
+	// 读取指定长度的数据
+	ReadN(n int) (size int, buf []byte)
+	// ShiftN 移动指定长度的下标
+	ShiftN(n int) (size int)
+	// 写数据
+	Write(buf []byte) (err error)
+	// 关闭连接
+	Close() error
+
+	// Context 获取用户上下文内容
+	Context() interface{}
+	// SetContext 设置用户上下文内容
+	SetContext(ctx interface{})
+	// Status 自定义连接状态
+	Status() int
+	// SetStatus 设置状态
+	SetStatus(status int)
+	// Version 协议版本
+	Version() uint8
+	// SetVersion 设置连接的协议版本
+	SetVersion(version uint8)
+}
+
+// TCPConn tcp连接
+type TCPConn struct {
 	id        int64 // 客户端唯一ID
 	fd        int   // 连接fd
 	loop      *eventloop.EventLoop
@@ -27,6 +58,7 @@ type Conn struct {
 	lnet      *LIMNet
 	ctx       interface{} // 用户自定义的内容
 	status    int         // 用户自定义的连接状态
+	version   uint8       // 连接使用协议的版本
 	buffer    []byte      // inbound的临时buffer
 	limlog.Log
 	inboundBuffer  *ringbuffer.RingBuffer // 来自客户端的数据
@@ -36,9 +68,9 @@ type Conn struct {
 
 }
 
-// NewConn 创建连接
-func NewConn(id int64, connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *Conn {
-	conn := &Conn{
+// NewTCPConn 创建连接
+func NewTCPConn(id int64, connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *TCPConn {
+	conn := &TCPConn{
 		id:             id,
 		fd:             connfd,
 		loop:           loop,
@@ -55,8 +87,12 @@ func NewConn(id int64, connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *Con
 	return conn
 }
 
-func (c *Conn) closeTimeoutConn() func() {
+func (c *TCPConn) closeTimeoutConn() func() {
+
 	return func() {
+		if !c.connected.Get() { // 如果已关闭，什么都不做
+			return
+		}
 		now := time.Now()
 		intervals := now.Sub(time.Unix(c.activeTime.Get(), 0))
 		if intervals >= c.lnet.opts.ConnIdleTime {
@@ -70,7 +106,7 @@ func (c *Conn) closeTimeoutConn() func() {
 // ---------- 实现 EventHandler ----------
 
 // Handle 处理事件通知
-func (c *Conn) Handle(connfd int, events limpoller.Event) {
+func (c *TCPConn) Handle(connfd int, events limpoller.Event) {
 	if c.lnet.opts.ConnIdleTime > 0 {
 		_ = c.activeTime.Swap(int(time.Now().Unix()))
 	}
@@ -93,7 +129,7 @@ func (c *Conn) Handle(connfd int, events limpoller.Event) {
 
 }
 
-func (c *Conn) handleRead() error {
+func (c *TCPConn) handleRead() error {
 	buf := c.loop.PacketBuf()
 	n, err := unix.Read(c.fd, buf)
 	if n == 0 || err != nil {
@@ -115,11 +151,11 @@ func (c *Conn) handleRead() error {
 	return err
 }
 
-func (c *Conn) read() ([]byte, error) {
+func (c *TCPConn) read() ([]byte, error) {
 	return c.lnet.opts.unPacket(c)
 }
 
-func (c *Conn) handleWrite() error {
+func (c *TCPConn) handleWrite() error {
 	head, tail := c.outboundBuffer.LazyReadAll()
 	n, err := unix.Write(c.fd, head)
 	if err != nil {
@@ -148,7 +184,7 @@ func (c *Conn) handleWrite() error {
 	return nil
 }
 
-func (c *Conn) handleClose(fd int) error {
+func (c *TCPConn) handleClose(fd int) error {
 	if c.connected.Get() {
 		c.connected.Set(false)
 
@@ -164,7 +200,7 @@ func (c *Conn) handleClose(fd int) error {
 	return nil
 }
 
-func (c *Conn) write(buf []byte) {
+func (c *TCPConn) write(buf []byte) {
 
 	if !c.connected.Get() {
 		return
@@ -209,7 +245,7 @@ func (c *Conn) write(buf []byte) {
 }
 
 // 释放连接
-func (c *Conn) release() {
+func (c *TCPConn) release() {
 	c.buffer = nil
 	c.ctx = nil
 	ringbuffer.Put(c.inboundBuffer)
@@ -223,12 +259,12 @@ func (c *Conn) release() {
 // ---------- 公用方法 ----------
 
 // GetID 获取客户端唯一ID
-func (c *Conn) GetID() int64 {
+func (c *TCPConn) GetID() int64 {
 	return c.id
 }
 
 // Read 读取数据
-func (c *Conn) Read() []byte {
+func (c *TCPConn) Read() []byte {
 	if !c.connected.Get() {
 		return nil
 	}
@@ -241,7 +277,7 @@ func (c *Conn) Read() []byte {
 }
 
 // ResetBuffer 重置客户端写入的buffer
-func (c *Conn) ResetBuffer() {
+func (c *TCPConn) ResetBuffer() {
 	c.buffer = c.buffer[:0]
 	c.inboundBuffer.Reset()
 	bytebuffer.Put(c.byteBuffer)
@@ -249,7 +285,7 @@ func (c *Conn) ResetBuffer() {
 }
 
 // ReadN 读取指定长度的数据
-func (c *Conn) ReadN(n int) (size int, buf []byte) {
+func (c *TCPConn) ReadN(n int) (size int, buf []byte) {
 	inBufferLen := c.inboundBuffer.Length()
 	tempBufferLen := len(c.buffer)
 	if totalLen := inBufferLen + tempBufferLen; totalLen < n || n <= 0 {
@@ -281,7 +317,7 @@ func (c *Conn) ReadN(n int) (size int, buf []byte) {
 }
 
 // ShiftN 移动指定长度的下标
-func (c *Conn) ShiftN(n int) (size int) {
+func (c *TCPConn) ShiftN(n int) (size int) {
 	inBufferLen := c.inboundBuffer.Length()
 	tempBufferLen := len(c.buffer)
 	if inBufferLen+tempBufferLen < n || n <= 0 {
@@ -310,7 +346,7 @@ func (c *Conn) ShiftN(n int) (size int) {
 }
 
 // Write 直写
-func (c *Conn) Write(buf []byte) (err error) {
+func (c *TCPConn) Write(buf []byte) (err error) {
 	if !c.connected.Get() {
 		return ErrConnectionClosed
 	}
@@ -320,27 +356,18 @@ func (c *Conn) Write(buf []byte) (err error) {
 	})
 }
 
-// WritePacket 写包
-func (c *Conn) WritePacket(packet Packet) (err error) {
-	data := packet.Packet(c)
-	if len(data) > 0 {
-		return c.Write(data)
-	}
-	return nil
-}
-
 // Connected 是否已连接
-func (c *Conn) Connected() bool {
+func (c *TCPConn) Connected() bool {
 	return c.connected.Get()
 }
 
 // BufferLength buffer长度
-func (c *Conn) BufferLength() int {
+func (c *TCPConn) BufferLength() int {
 	return c.inboundBuffer.Length() + len(c.buffer)
 }
 
 // Close 关闭
-func (c *Conn) Close() error {
+func (c *TCPConn) Close() error {
 	if !c.connected.Get() {
 		return ErrConnectionClosed
 	}
@@ -350,13 +377,19 @@ func (c *Conn) Close() error {
 }
 
 // Context 获取用户上下文内容
-func (c *Conn) Context() interface{} { return c.ctx }
+func (c *TCPConn) Context() interface{} { return c.ctx }
 
 // SetContext 设置用户上下文内容
-func (c *Conn) SetContext(ctx interface{}) { c.ctx = ctx }
+func (c *TCPConn) SetContext(ctx interface{}) { c.ctx = ctx }
 
 // Status 自定义连接状态
-func (c *Conn) Status() int { return c.status }
+func (c *TCPConn) Status() int { return c.status }
 
 // SetStatus 设置状态
-func (c *Conn) SetStatus(status int) { c.status = status }
+func (c *TCPConn) SetStatus(status int) { c.status = status }
+
+// Version 协议版本
+func (c *TCPConn) Version() uint8 { return c.version }
+
+// SetVersion 设置连接的协议版本
+func (c *TCPConn) SetVersion(version uint8) { c.version = version }

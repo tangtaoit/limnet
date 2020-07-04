@@ -11,7 +11,7 @@ type echoServer struct {
 	limnet.DefaultEventHandler
 }
 
-func (e *echoServer) OnPacket(c *limnet.Conn, data []byte) (out []byte) {
+func (e *echoServer) OnPacket(c limnet.Conn, data []byte) (out []byte) {
 	out = data
 
 	// c.Write(data) TODO： 大量并发 异步write 会有错误

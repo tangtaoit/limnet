@@ -123,6 +123,22 @@ func (p *Poller) EnableRead(fd int) error {
 	return err
 }
 
+// EnableWrite 修改fd注册事件为可写事件
+func (p *Poller) EnableWrite(fd int) error {
+	oldEvents, ok := p.sockets.Load(fd)
+	if !ok {
+		return errors.New("sync map load error")
+	}
+
+	newEvents := EventWrite
+	kEvents := p.kEvents(oldEvents.(Event), newEvents, fd)
+	_, err := unix.Kevent(p.fd, kEvents, nil, nil)
+	if err != nil {
+		p.sockets.Store(fd, newEvents)
+	}
+	return err
+}
+
 func (p *Poller) kEvents(old Event, new Event, fd int) (ret []unix.Kevent_t) {
 	if new&EventRead != 0 {
 		if old&EventRead == 0 {
