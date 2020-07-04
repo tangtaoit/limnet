@@ -26,7 +26,7 @@ func NewOption() *Options {
 		ConnEventLoopNum: 0,
 		TimingWheelTick:  time.Millisecond * 10,
 		TimingWheelSize:  1000,
-		ConnIdleTime:     60 * time.Second,
+		ConnIdleTime:     70 * time.Second,
 		unPacket: func(c Conn) ([]byte, error) {
 			buf := c.Read()
 			if len(buf) == 0 {
@@ -59,6 +59,14 @@ func WithWSAddr(wsaddr string) Option {
 func WithUnPacket(unPacket UnPacket) Option {
 	return func(opts *Options) error {
 		opts.unPacket = unPacket
+		return nil
+	}
+}
+
+// WithConnIdleTime 连接闲置时间
+func WithConnIdleTime(connIdleTime time.Duration) Option {
+	return func(opts *Options) error {
+		opts.ConnIdleTime = connIdleTime
 		return nil
 	}
 }
