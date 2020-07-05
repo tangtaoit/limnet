@@ -210,7 +210,7 @@ func (c *WSConn) Write(buf []byte) error {
 	if !c.connected.Get() {
 		return ErrConnectionClosed
 	}
-	return c.Write(buf)
+	return c.write(buf)
 }
 
 // Close 关闭连接
