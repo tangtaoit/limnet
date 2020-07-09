@@ -1,6 +1,6 @@
 ## limnet
 
-limnet 轻量，快速，高效的网络框架。
+limnet 轻量，快速，高效的网络框架.
 
 ```
 s := limnet.New(handler,address,opts...) // 创建limnet服务
