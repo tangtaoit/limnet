@@ -34,7 +34,8 @@ type Conn interface {
 	Write(buf []byte) (err error)
 	// 关闭连接
 	Close() error
-
+	// 获取连接地址
+	GetAddr() string
 	// Context 获取用户上下文内容
 	Context() interface{}
 	// SetContext 设置用户上下文内容
@@ -65,16 +66,17 @@ type TCPConn struct {
 	outboundBuffer *ringbuffer.RingBuffer // 将要写到客户端的数据
 	byteBuffer     *bytebuffer.ByteBuffer // 临时读到的buffer
 	activeTime     atomic.Int64           // 连接最后一次活动时间，单位秒
-
+	addr           string
 }
 
 // NewTCPConn 创建连接
-func NewTCPConn(id int64, connfd int, loop *eventloop.EventLoop, lnet *LIMNet) *TCPConn {
+func NewTCPConn(id int64, connfd int, addr string, loop *eventloop.EventLoop, lnet *LIMNet) *TCPConn {
 	conn := &TCPConn{
 		id:             id,
 		fd:             connfd,
 		loop:           loop,
 		lnet:           lnet,
+		addr:           addr,
 		Log:            limlog.NewLIMLog(fmt.Sprintf("Conn[connfd:%d]", connfd)),
 		inboundBuffer:  ringbuffer.Get(),
 		outboundBuffer: ringbuffer.Get(),
@@ -393,3 +395,6 @@ func (c *TCPConn) Version() uint8 { return c.version }
 
 // SetVersion 设置连接的协议版本
 func (c *TCPConn) SetVersion(version uint8) { c.version = version }
+
+// GetAddr 获取连接地址
+func (c *TCPConn) GetAddr() string { return c.addr }

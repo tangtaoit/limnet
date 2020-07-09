@@ -25,6 +25,7 @@ type WSConn struct {
 	ctx        interface{}            // 用户自定义的内容
 	status     int                    // 用户自定义的连接状态
 	version    uint8                  // 连接使用协议的版本
+	addr       string
 }
 
 // NewWSConn 创建websocket连接
@@ -36,6 +37,7 @@ func NewWSConn(id int64, conn *websocket.Conn, lnet *LIMNet) *WSConn {
 		lnet:          lnet,
 		inboundBuffer: ringbuffer.Get(),
 	}
+	w.addr = conn.RemoteAddr().String()
 	w.connected.Set(true)
 	if lnet.opts.ConnIdleTime > 0 {
 		_ = w.activeTime.Swap(int(time.Now().Unix()))
@@ -238,3 +240,6 @@ func (c *WSConn) Version() uint8 { return c.version }
 
 // SetVersion 设置连接的协议版本
 func (c *WSConn) SetVersion(version uint8) { c.version = version }
+
+// GetAddr 获取连接地址
+func (c *WSConn) GetAddr() string { return c.addr }

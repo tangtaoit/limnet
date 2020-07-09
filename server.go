@@ -1,6 +1,8 @@
 package limnet
 
 import (
+	"fmt"
+	"net"
 	"runtime"
 	"strconv"
 	"strings"
@@ -145,7 +147,7 @@ func (l *LIMNet) nextLoop() *eventloop.EventLoop {
 func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 	loop := l.nextLoop() // 获取conn的eventloop
 	clientID := atomic.AddInt64(&l.idGen, 1)
-	conn := NewTCPConn(clientID, connfd, loop, l) // 创建一个新的连接
+	conn := NewTCPConn(clientID, connfd, sockAddrToString(sa), loop, l) // 创建一个新的连接
 
 	l.eventHandler.OnConnect(conn) // 触发连接事件
 
@@ -156,7 +158,16 @@ func (l *LIMNet) handleNewConnection(connfd int, sa unix.Sockaddr) {
 }
 
 // ---------- other ----------
-
+func sockAddrToString(sa unix.Sockaddr) string {
+	switch sa := (sa).(type) {
+	case *unix.SockaddrInet4:
+		return net.JoinHostPort(net.IP(sa.Addr[:]).String(), strconv.Itoa(sa.Port))
+	case *unix.SockaddrInet6:
+		return net.JoinHostPort(net.IP(sa.Addr[:]).String(), strconv.Itoa(sa.Port))
+	default:
+		return fmt.Sprintf("(unknown - %T)", sa)
+	}
+}
 func parseAddr(addr string) (network, address string, port int) {
 	network = "tcp"
 	address = strings.ToLower(addr)
