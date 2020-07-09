@@ -1,7 +1,6 @@
 package limnet
 
 import (
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -112,8 +111,8 @@ func (l *LIMNet) Run() {
 	l.Error("狸猫IM退出！")
 }
 
-// Close 关闭
-func (l *LIMNet) Close() error {
+// Stop 停止服务
+func (l *LIMNet) Stop() error {
 	l.timingWheel.Stop()
 	l.listenerLoop.Stop()
 	for k := range l.connectLoops {
@@ -122,7 +121,11 @@ func (l *LIMNet) Close() error {
 		}
 	}
 	l.tcp.Stop()
-	os.Exit(0)
+	return nil
+}
+
+// Close 关闭
+func (l *LIMNet) Close() error {
 	return nil
 }
 

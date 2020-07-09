@@ -76,5 +76,6 @@ func (s *TCPServer) GetRealAddr() string {
 // Stop Stop
 func (s *TCPServer) Stop() error {
 	unix.Close(s.fd)
+	s.Info("退出")
 	return nil
 }

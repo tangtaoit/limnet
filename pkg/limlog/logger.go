@@ -2,6 +2,7 @@ package limlog
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -21,8 +22,8 @@ func init() {
 		MaxAge:     28, // days
 	})
 	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(newEncoderConfig()),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(infoWriter)),
+		zapcore.NewJSONEncoder(newEncoderConfig()),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(infoWriter)),
 		zap.DebugLevel,
 	)
 	logger = zap.New(core)
@@ -34,8 +35,8 @@ func init() {
 		MaxAge:     28, // days
 	})
 	core = zapcore.NewCore(
-		zapcore.NewConsoleEncoder(newEncoderConfig()),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(errorWriter)),
+		zapcore.NewJSONEncoder(newEncoderConfig()),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(errorWriter)),
 		zap.ErrorLevel,
 	)
 	errorLogger = zap.New(core)
@@ -47,8 +48,8 @@ func init() {
 		MaxAge:     28, // days
 	})
 	core = zapcore.NewCore(
-		zapcore.NewConsoleEncoder(newEncoderConfig()),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(warnWriter)),
+		zapcore.NewJSONEncoder(newEncoderConfig()),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(warnWriter)),
 		zap.WarnLevel,
 	)
 	warnLogger = zap.New(core)
@@ -58,17 +59,22 @@ func init() {
 func newEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
-		TimeKey:        "T",
-		LevelKey:       "L",
-		NameKey:        "N",
-		CallerKey:      "C",
-		MessageKey:     "M",
-		StacktraceKey:  "S",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     timeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		TimeKey:       "time",
+		LevelKey:      "level",
+		NameKey:       "logger",
+		CallerKey:     "linenum",
+		MessageKey:    "msg",
+		StacktraceKey: "stacktrace",
+		LineEnding:    zapcore.DefaultLineEnding,
+		EncodeLevel:   zapcore.LowercaseLevelEncoder, // 小写编码器
+		EncodeCaller:  zapcore.FullCallerEncoder,     // 全路径编码器
+		EncodeName:    zapcore.FullNameEncoder,
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("2006-01-02 15:04:05"))
+		},
+		EncodeDuration: func(d time.Duration, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendInt64(int64(d) / 1000000)
+		},
 	}
 }
 func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
