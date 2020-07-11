@@ -13,8 +13,10 @@ import (
 var logger *zap.Logger
 var errorLogger *zap.Logger
 var warnLogger *zap.Logger
+var atom = zap.NewAtomicLevel()
 
 func init() {
+
 	infoWriter := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "info.log",
 		MaxSize:    500, // megabytes
@@ -24,7 +26,7 @@ func init() {
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(infoWriter)),
-		zap.DebugLevel,
+		atom,
 	)
 	logger = zap.New(core)
 
@@ -50,10 +52,15 @@ func init() {
 	core = zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(warnWriter)),
-		zap.WarnLevel,
+		zap.ErrorLevel,
 	)
 	warnLogger = zap.New(core)
 
+}
+
+// SetLevel 设置日志登录
+func SetLevel(l zapcore.Level) {
+	atom.SetLevel(l)
 }
 
 func newEncoderConfig() zapcore.EncoderConfig {
