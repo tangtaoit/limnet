@@ -52,7 +52,7 @@ func init() {
 	core = zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(warnWriter)),
-		zap.ErrorLevel,
+		zap.WarnLevel,
 	)
 	warnLogger = zap.New(core)
 
