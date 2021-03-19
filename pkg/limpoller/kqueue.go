@@ -165,6 +165,9 @@ func (p *Poller) kEvents(old Event, new Event, fd int) (ret []unix.Kevent_t) {
 // Poll 启动 kqueue 循环
 func (p *Poller) Poll(handler func(fd int, event Event)) {
 	defer func() {
+		if err := recover(); err != nil {
+			limlog.Error("Poll Exit: ", zap.Error(err.(error)))
+		}
 		close(p.waitDone)
 	}()
 

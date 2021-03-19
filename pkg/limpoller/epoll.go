@@ -134,6 +134,9 @@ func (ep *Poller) EnableRead(fd int) error {
 // Poll 启动 epoll wait 循环
 func (ep *Poller) Poll(handler func(fd int, event Event)) {
 	defer func() {
+		if err := recover(); err != nil {
+			limlog.Error("Poll Exit: ", zap.Error(err.(error)))
+		}
 		close(ep.waitDone)
 	}()
 
