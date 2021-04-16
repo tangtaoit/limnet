@@ -115,7 +115,7 @@ func (l *EventLoop) Trigger(job Job) error {
 func (l *EventLoop) handleEvent(fd int, events limpoller.Event) {
 	defer func() {
 		if err := recover(); err != nil {
-			limlog.Error("Poller的Poll方法退出！！！", zap.Error(err.(error)))
+			limlog.Warn("EventLoop处理handleEvent遇到异常！", zap.Error(err.(error)))
 		}
 	}()
 	l.eventHandling.Set(true)
