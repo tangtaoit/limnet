@@ -113,6 +113,11 @@ func (l *EventLoop) Trigger(job Job) error {
 }
 
 func (l *EventLoop) handleEvent(fd int, events limpoller.Event) {
+	defer func() {
+		if err := recover(); err != nil {
+			limlog.Error("Poller的Poll方法退出！！！", zap.Error(err.(error)))
+		}
+	}()
 	l.eventHandling.Set(true)
 	if fd != -1 { // -1表示唤醒操作
 		s, ok := l.handlers.Load(fd)

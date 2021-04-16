@@ -21,6 +21,7 @@ type Poller struct {
 	eventFd  int
 	running  atomic.Bool
 	waitDone chan struct{}
+	buf      []byte
 }
 
 // Create 创建Poller
@@ -49,6 +50,7 @@ func Create() (*Poller, error) {
 	return &Poller{
 		fd:       fd,
 		eventFd:  eventFd,
+		buf:      make([]byte, 8),
 		waitDone: make(chan struct{}),
 	}, nil
 }
@@ -61,10 +63,8 @@ func (ep *Poller) Wake() error {
 	return err
 }
 
-var buf = make([]byte, 8)
-
 func (ep *Poller) wakeHandlerRead() {
-	n, err := unix.Read(ep.eventFd, buf)
+	n, err := unix.Read(ep.eventFd, ep.buf)
 	if err != nil || n != 8 {
 		limlog.Error("wakeHandlerRead", zap.Error(err))
 	}
@@ -135,8 +135,9 @@ func (ep *Poller) EnableRead(fd int) error {
 func (ep *Poller) Poll(handler func(fd int, event Event)) {
 	defer func() {
 		if err := recover(); err != nil {
-			limlog.Error("Poll Exit: ", zap.Error(err.(error)))
+			limlog.Error("非常严重poller遇到异常退出去了，将有一批连接断开！！！，建议重启！（上层需要把异常消化调 Poller.Poll的handler方法建议加上defer）Poll Exit: ", zap.Error(err.(error)))
 		}
+		limlog.Error("Poller的Poll方法退出！！！")
 		close(ep.waitDone)
 	}()
 
