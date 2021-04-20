@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/panjf2000/ants/v2 v2.4.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/tgo-team/tgo v0.0.0-20191203080157-6d3b4ecfd4ca // indirect
 	github.com/valyala/bytebufferpool v1.0.0
 	go.uber.org/zap v1.15.0

@@ -3,6 +3,7 @@ package eventloop
 import (
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/tangtaoit/limnet/pkg/limlog"
 	"github.com/tangtaoit/limnet/pkg/limpoller"
 	"github.com/tangtaoit/limnet/pkg/limutil"
@@ -115,7 +116,8 @@ func (l *EventLoop) Trigger(job Job) error {
 func (l *EventLoop) handleEvent(fd int, events limpoller.Event) {
 	defer func() {
 		if err := recover(); err != nil {
-			limlog.Warn("EventLoop处理handleEvent遇到异常！", zap.Error(err.(error)))
+			limlog.Warn("EventLoop处理handleEvent遇到异常！", zap.Error(errors.Wrap(err.(error), "EventHandler遇到异常，请检查代码！")))
+
 		}
 	}()
 	l.eventHandling.Set(true)
