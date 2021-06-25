@@ -1,8 +1,11 @@
 package limnet
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/tangtaoit/limnet/pkg/limlog"
@@ -13,6 +16,7 @@ import (
 type WSServer struct {
 	limlog.Log
 	lnet *LIMNet
+	srv  *http.Server
 }
 
 // NewWSServer 创建一个websocket服务
@@ -25,14 +29,24 @@ func NewWSServer(lnet *LIMNet) *WSServer {
 
 // Start Start
 func (s *WSServer) Start() {
-	http.HandleFunc("/", s.server)
+	mux := http.NewServeMux()
+	s.srv = &http.Server{Addr: s.lnet.opts.WSAddr, Handler: mux}
+	mux.HandleFunc("/", s.server)
 	go func() {
-		err := http.ListenAndServe(s.lnet.opts.WSAddr, nil)
-		if err != nil {
+		err := s.srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
-		s.Debug("启动")
+		s.Debug("Start")
 	}()
+
+}
+
+// Stop Stop
+func (s *WSServer) Stop() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return s.srv.Shutdown(ctx)
 }
 
 func (s *WSServer) server(w http.ResponseWriter, r *http.Request) {

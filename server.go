@@ -110,19 +110,30 @@ func (l *LIMNet) Run() {
 	}
 	sw.AddAndRun(l.listenerLoop.Run)
 	sw.Wait()
-	l.Error("狸猫IM退出！")
+	l.Error("Quit！")
 }
 
 // Stop 停止服务
 func (l *LIMNet) Stop() error {
 	l.timingWheel.Stop()
-	l.listenerLoop.Stop()
+	err := l.tcp.Stop()
+	if err != nil {
+		return err
+	}
+	err = l.ws.Stop()
+	if err != nil {
+		return err
+	}
+	err = l.listenerLoop.Stop()
+	if err != nil {
+		return err
+	}
 	for k := range l.connectLoops {
 		if err := l.connectLoops[k].Stop(); err != nil {
 			l.Error("stop conn fail ", zap.Error(err))
 		}
 	}
-	l.tcp.Stop()
+	<-l.tcp.Stopped
 	return nil
 }
 

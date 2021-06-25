@@ -70,6 +70,7 @@ func (l *EventLoop) Run() {
 // Stop 关闭事件循环
 func (l *EventLoop) Stop() error {
 	l.handlers.Range(func(key, value interface{}) bool {
+
 		s, ok := value.(EventHandler)
 		if !ok {
 			l.Error("value.(Socket) fail")

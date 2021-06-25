@@ -13,9 +13,20 @@ import (
 var logger *zap.Logger
 var errorLogger *zap.Logger
 var warnLogger *zap.Logger
+var testLogger *zap.Logger
 var atom = zap.NewAtomicLevel()
 
+// TestMode TestMode
+var TestMode = false
+
 func init() {
+
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(newEncoderConfig()),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout)),
+		atom,
+	)
+	testLogger = zap.New(core)
 
 	infoWriter := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "info.log",
@@ -23,7 +34,7 @@ func init() {
 		MaxBackups: 3,
 		MaxAge:     28, // days
 	})
-	core := zapcore.NewCore(
+	core = zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(infoWriter)),
 		atom,
@@ -90,22 +101,38 @@ func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 
 // Info Info
 func Info(msg string, fields ...zap.Field) {
+	if TestMode {
+		testLogger.Info(msg, fields...)
+		return
+	}
 	logger.Info(msg, fields...)
 }
 
 // Debug Debug
 func Debug(msg string, fields ...zap.Field) {
+	if TestMode {
+		testLogger.Debug(msg, fields...)
+		return
+	}
 	logger.Debug(msg, fields...)
 
 }
 
 // Error Error
 func Error(msg string, fields ...zap.Field) {
+	if TestMode {
+		testLogger.Error(msg, fields...)
+		return
+	}
 	errorLogger.Error(msg, fields...)
 }
 
 // Warn Warn
 func Warn(msg string, fields ...zap.Field) {
+	if TestMode {
+		testLogger.Warn(msg, fields...)
+		return
+	}
 	warnLogger.Warn(msg, fields...)
 }
 

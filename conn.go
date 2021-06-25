@@ -187,6 +187,7 @@ func (c *TCPConn) handleWrite() error {
 }
 
 func (c *TCPConn) handleClose(fd int) error {
+
 	if c.connected.Get() {
 		c.connected.Set(false)
 
@@ -195,6 +196,7 @@ func (c *TCPConn) handleClose(fd int) error {
 		c.lnet.eventHandler.OnClose(c) // 连接关闭
 
 		if err := unix.Close(c.fd); err != nil {
+			fmt.Println("handleClose111error.....")
 			limlog.Error("[close fd]", zap.Error(err))
 		}
 		c.release() // 释放连接
