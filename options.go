@@ -6,13 +6,16 @@ import (
 
 // Options 配置
 type Options struct {
-	Addr             string        // 连接地址 例如 tcp://127.0.0.1:6666
-	WSAddr           string        // websocket的地址
-	ConnEventLoopNum int           // 连接事件loop数量 ， 如果为小于或等于0则为 runtime.NumCPU() 的值
-	TimingWheelTick  time.Duration // 时间轮轮训间隔 必须大于等于1ms
-	TimingWheelSize  int64         // 时间轮大小
-	ConnIdleTime     time.Duration // 连接闲置时间，如果大于此闲置时间将自动关闭连接
-	unPacket         UnPacket      // 协议
+	Addr              string        // 连接地址 例如 tcp://127.0.0.1:6666
+	WSAddr            string        // websocket的地址
+	SSLOn             bool          // websocket是否开启 ssl
+	SSLCertificate    string        // websocket的ssl证书 （开启ssl必须要配置）
+	SSLCertificateKey string        // websocket的ssl证书key （开启ssl必须要配置）
+	ConnEventLoopNum  int           // 连接事件loop数量 ， 如果为小于或等于0则为 runtime.NumCPU() 的值
+	TimingWheelTick   time.Duration // 时间轮轮训间隔 必须大于等于1ms
+	TimingWheelSize   int64         // 时间轮大小
+	ConnIdleTime      time.Duration // 连接闲置时间，如果大于此闲置时间将自动关闭连接
+	unPacket          UnPacket      // 协议
 }
 
 // Option 参数项
@@ -23,6 +26,7 @@ func NewOption() *Options {
 	return &Options{
 		Addr:             "tcp://127.0.0.1:6666",
 		WSAddr:           "0.0.0.0:8030",
+		SSLOn:            false,
 		ConnEventLoopNum: 0,
 		TimingWheelTick:  time.Millisecond * 10,
 		TimingWheelSize:  1000,

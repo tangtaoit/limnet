@@ -33,7 +33,12 @@ func (s *WSServer) Start() {
 	s.srv = &http.Server{Addr: s.lnet.opts.WSAddr, Handler: mux}
 	mux.HandleFunc("/", s.server)
 	go func() {
-		err := s.srv.ListenAndServe()
+		var err error
+		if s.lnet.opts.SSLOn {
+			err = s.srv.ListenAndServe()
+		} else {
+			err = s.srv.ListenAndServeTLS(s.lnet.opts.SSLCertificate, s.lnet.opts.SSLCertificateKey)
+		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
