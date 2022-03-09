@@ -74,3 +74,24 @@ func WithConnIdleTime(connIdleTime time.Duration) Option {
 		return nil
 	}
 }
+
+func WithSSLOn(sslOn bool) Option {
+	return func(opts *Options) error {
+		opts.SSLOn = sslOn
+		return nil
+	}
+}
+
+func WithSSLCertificate(sslCertificate string) Option {
+	return func(opts *Options) error {
+		opts.SSLCertificate = sslCertificate
+		return nil
+	}
+}
+
+func WithSSLCertificateKey(sslCertificateKey string) Option {
+	return func(opts *Options) error {
+		opts.SSLCertificateKey = sslCertificateKey
+		return nil
+	}
+}
