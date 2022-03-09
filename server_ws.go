@@ -35,9 +35,9 @@ func (s *WSServer) Start() {
 	go func() {
 		var err error
 		if s.lnet.opts.SSLOn {
-			err = s.srv.ListenAndServe()
-		} else {
 			err = s.srv.ListenAndServeTLS(s.lnet.opts.SSLCertificate, s.lnet.opts.SSLCertificateKey)
+		} else {
+			err = s.srv.ListenAndServe()
 		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
